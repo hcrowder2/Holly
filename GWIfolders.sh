@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#Usage: creates folder structure for data exports for rda spec, twix spec, twix BBB
+
 read -p 'ID: ' ID
 
 read -p 'Enter Date in format YYYY_MM_DD: ' Date 
@@ -22,16 +24,16 @@ I3="Instance_3_Diff"
 
 
 
-mkdir -pv "${lead}_spec"/{"${F1}"/{"${F1}_${I1}","${F1}_${I2}","${F1}_${I3}"},"${F2}"/{"${F2}_${I1}","${F2}_${I2}","${F2}_${I3}"},"${F3}"/{"${F3}_${I1}","${F3}_${I2}","${F3}_${I3}"},"${F4}"/{"${F4}_${I1}","${F4}_${I2}","${F4}_${I3}"},"${F5}"/{"${F5}_${I1}","${F5}_${I2}","${F5}_${I3}"},"${F6}"/{"${F6}_${I1}","${F6}_${I2}","${F6}_${I3}"},"${F7}","${F8}"}
+mkdir -pv "${lead}_rda_spec"/{"${F1}"/{"${F1}_${I1}","${F1}_${I2}","${F1}_${I3}"},"${F2}"/{"${F2}_${I1}","${F2}_${I2}","${F2}_${I3}"},"${F3}"/{"${F3}_${I1}","${F3}_${I2}","${F3}_${I3}"},"${F4}"/{"${F4}_${I1}","${F4}_${I2}","${F4}_${I3}"},"${F5}"/{"${F5}_${I1}","${F5}_${I2}","${F5}_${I3}"},"${F6}"/{"${F6}_${I1}","${F6}_${I2}","${F6}_${I3}"},"${F7}","${F8}"}
 
 
 
-chmod -R +rwx $PWD/"${lead}_spec"/
+chmod -R +rwx $PWD/"${lead}_rda_spec"/
 
 mkdir -pv "${lead}" 
-mkdir -pv "${lead}_BBB" 
-mkdir -pv "${lead}_twix" 
+mkdir -pv "${lead}_twix_BBB" 
+mkdir -pv "${lead}_twix_spec" 
 
-chmod  +rwx $PWD/"${lead}_BBB"/
-chmod  +rwx $PWD/"${lead}_twix"/
+chmod  +rwx $PWD/"${lead}_twix_BBB"/
+chmod  +rwx $PWD/"${lead}_twix_spec"/
 chmod  +rwx $PWD/"${lead}"/
