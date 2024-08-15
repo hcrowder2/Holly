@@ -15,7 +15,7 @@ library(tidyverse)
 #############
 #import data#
 #############
-df <- read_delim("Downloads/BoxSpec.txt", 
+df <- read_delim("BoxSpec.txt", 
                  delim = "\t", escape_double = FALSE, 
                  col_names = FALSE, col_types = cols(X2 = col_character(), 
                                                      X4 = col_character()), trim_ws = TRUE)
@@ -25,13 +25,20 @@ colnames(df)[1:4] <- c("ID", "Date", "Scan", "Instance")
 
 ###############
 #set variables#
+###############
+
 # List of expected scans
 expected_scans <- c("svs_edit_L_dLPFC_GABA_NWS_2.6mm3","svs_edit_L_dLPFC_GABA_WS_2.6mm3",
            "svs_edit_R_Vis_GABA_NWS_2.5mm3","svs_edit_R_Vis_GABA_WS_2.5mm3",
            "svs_edit_L_Prec_GABA_NWS_2.6mm2", "svs_edit_L_Prec_GABA_WS_2.6mm2",   
            "smm_svs_herc_Prec_WS", "smm_svs_herc_Prec_NWS")
 
-
+today_date<- Sys.Date()
+format(today_date, format = "%Y%m%d")
+today_date<-as.character(today_date)
+###########
+#Functions#
+###########
 
 #FunctionnnnnTime-- This is to check for the missing instances and export a df of it
 check_instances <- function(df, expected_scans) {
@@ -88,6 +95,7 @@ check_instances <- function(df, expected_scans) {
 #thank u rainbow curly brackets but also these were the death of me
 
 ###########Heres where I do the things################
+
 # make our df of the missing instances 
 missing_instances_to_print <- check_instances(df, expected_scans)
 missing_instances_to_print <- missing_instances_to_print %>% arrange(ID, Date, Scan, Instance)
@@ -96,8 +104,11 @@ missing_instances_to_print <- missing_instances_to_print %>% arrange(ID, Date, S
 print(missing_instances_to_print)
 
 # Export the  dataframe as a CSV -- id like to use a variable to add todays date to the title.
-write.csv(missing_instances_to_print, "missing_instances.csv")
+write.csv(missing_instances_to_print, paste0("missing_instances","_",today_date,".csv"))
 
 
 #i want us to know if any files were duplicated; not sure what to do with this info but here we are.
 #next i can check that the id and date are expected.
+duplicate_scans<-  df %>%
+  filter(duplicated(df,fromLast=FALSE))
+write.csv(duplicate_scans, paste0("duplicate_instances","_",today_date,".csv"))
