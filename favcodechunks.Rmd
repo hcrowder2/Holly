@@ -1,0 +1,78 @@
+---
+title: "Favorite Code Chunks"
+author: "Holly Crowder"
+date: '2024-06-27'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+df<- mtcars
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+```
+
+
+## %nin% 
+
+put this at the top of your code so that you can use %nin% 
+```{r %nin%}
+`%nin%` = Negate(`%in%`)
+```
+
+##Filtering data
+%>% require tidyverse 
+```{r}
+library(tidyverse)
+mylist <- c("setosa")
+iris<-iris%>%
+  filter(Species %in% mylist & Petal.Length >= 1.5)
+head(iris)
+```
+
+
+##grouping 
+
+This will print the mean mpg per cyl 
+```{r, echo=TRUE, results='hide'}
+mean_mpgs<- df%>% 
+  group_by(cyl)%>%
+  summarise(mean_mpg = mean(mpg))
+```
+now we can compare each vs the expected value
+```{r}
+df$above_avg_mpg<- df%>% 
+  group_by(cyl)%>%
+  case_when(mpg> mean_mpgs$mpg)
+```
+
+#use grouping to check data against a reference set 
+```{r}
+
+```
+
+
+
+
+## DT::datatable
+Makes a fully interactive data table in rmd documents with no extra work.
+```{r datatable}
+DT::datatable(df)
+```
+This is wonderful because you can selectively display certain columns, and limit how many rows it shows on each page
+```{r datatable cols}
+DT::datatable(df[,c(1:2,6)])
+```
+when you confine it to a fill container it will give you scrollbars automatically. Yoy can use the scrollY option to change the size. 
+```{r fill.container}
+options(DT.fillContainer = T)
+DT::datatable(df, options = list(pageLength = 10,scrollY = "200px"))
+```
+

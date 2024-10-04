@@ -1,0 +1,210 @@
+---
+title: "Dicoms_on_Box"
+author: "Holly Crowder"
+date: '2024-06-26'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+###################
+library(readr)
+library(tidyverse)
+library(DT)
+###################
+df2 <- read_csv("HoltonImageFiles_edit_hc.csv", col_names = c("FolderName", "ID", "Date", "Scan", "SeriesDescription", "Size","X","Y","Z","Instances"), 
+                col_types = cols(Date = col_date(format = "%Y_%m_%d")))
+
+df2$Date<-format(df2$Date, format = "%Y-%m-%d")
+df2<-na.omit(df2)
+# List of expected scans
+required_series_desc <- c("Siemens_MPRAGE", 
+                          "Siemens_MPRAGE_ND",
+                          "ep2d_3.2mm_2Back", 
+                          "gre_field_mapping_2Back_ND",
+                          "gre_field_mapping_2Back")
+care_about_sd<- c("Siemens_MPRAGE", 
+                  "Siemens_MPRAGE_ND",
+                  "Siemens_MPRAGE_2x2x2", 
+                  "Siemens_MPRAGE_2x2x2_ND",
+                  "ep2d_3.2mm_2Back", 
+                  "gre_field_mapping_2Back_ND",
+                  "gre_field_mapping_2Back")
+
+today_date<- Sys.Date()
+today_date<-as.character(today_date)
+`%nin%` = Negate(`%in%`)
+
+datalog2<- read_csv("datalog_2024_06_26.csv", 
+                               col_types = cols(`Date of Scan` = col_date(format = "%m/%d/%Y")))
+datalog2<- datalog2[,1:2]
+colnames(datalog2)[1:2] <- c("Date","ID")
+datalog2$Date<-format(datalog2$Date, format = "%Y-%m-%d")
+
+
+check_series_desc <- function(df2, required_series_desc) {
+  
+  missing_df2 <- data.frame()
+  
+  # loop through each foldername
+  for (i in unique(df2$FolderName)) {
+    subset_df <- df2[df2$FolderName == i, ]
+    
+    present_sd <- subset_df$SeriesDescription
+    
+    # Find missing series descriptions
+    missing_sd <- setdiff(required_series_desc, present_sd)
+    
+    # Append missing series descriptions to missing_df2
+    if (length(missing_sd) > 0) {
+      missing_sd_rows <- data.frame(ID = rep(i, length(missing_sd)),
+                                    SeriesDescription = missing_sd,
+                                    stringsAsFactors = FALSE)
+      missing_df2 <- rbind(missing_df2, missing_sd_rows)
+    }
+  }
+  
+  # Return the combined missing descriptions data frame
+  return(missing_df2)
+}
+
+df2_check<-df2%>%
+  filter(SeriesDescription %in% care_about_sd)
+sd = df2_check$SeriesDescription
+df2_check$expected_instances = case_when(grepl("Siemens_MPRAGE_ND$",sd ) ~ 1,
+                               grepl("Siemens_MPRAGE$", sd) ~ 1,
+                               grepl("Siemens_MPRAGE_2x2x2$", sd) ~ 1,
+                               grepl("Siemens_MPRAGE_2x2x2_ND$", sd) ~ 1,
+                               grepl("ep2d_3.2mm_2Back$", sd) ~ 124,
+                               grepl("gre_field_mapping_2Back_ND$", sd) ~ 1,
+                               grepl("gre_field_mapping_2Back$", sd) ~ 1)
+
+df2_check$expected_slices = case_when( grepl("Siemens_MPRAGE_ND$", sd) ~ 176,
+                                         grepl("Siemens_MPRAGE$", sd) ~ 176,
+                                         grepl("Siemens_MPRAGE_2x2x2$", sd) ~ 176,
+                                         grepl("Siemens_MPRAGE_2x2x2_ND$", sd) ~ 176,
+                                         grepl("ep2d_3.2mm_2Back$", sd) ~ 64,
+                                         grepl("gre_field_mapping_2Back_ND$", sd) ~ 64,
+                                         grepl("gre_field_mapping_2Back$", sd) ~ 64)
+
+df2_check$expected_size = case_when( grepl("Siemens_MPRAGE_ND$", sd) ~ 22.53,
+                                       grepl("Siemens_MPRAGE$", sd) ~ 22.53,
+                                       grepl("Siemens_MPRAGE_2x2x2$", sd) ~ 5.63,
+                                       grepl("Siemens_MPRAGE_2x2x2_ND$", sd) ~ 5.63,
+                                       grepl("ep2d_3.2mm_2Back$", sd) ~ 46.62,
+                                       grepl("gre_field_mapping_2Back_ND$", sd) ~ 0.38,
+                                       grepl("gre_field_mapping_2Back$", sd) ~ 0.38)
+df2_check$Date<- as.character(df2_check$Date)
+
+df2_check$correctslice<- case_when(df2_check$X== df2_check$expected_slices ~ TRUE,
+                                df2_check$X!=df2_check$expected_slices ~ FALSE)
+df2_check$correctinstance <- case_when(df2_check$Instances==df2_check$expected_instances ~ TRUE,
+                                       df2_check$Instances!=df2_check$expected_instances ~ FALSE)
+df2_check$correctsize <- case_when(df2_check$Size==df2_check$expected_size ~ TRUE,
+                                   df2_check$Size!=df2_check$expected_size ~ FALSE)
+
+instance_errors<- df2_check%>% 
+  filter(correctinstance==FALSE)
+slice_errors<- df2_check%>%
+  filter(correctslice==FALSE)
+size_errors<-df2_check%>% 
+  filter(correctsize==FALSE)
+instance_errors_bySD<- df2_check%>% 
+  group_by(FolderName,SeriesDescription)%>%
+  filter(all(correctinstance==FALSE)|all(correctsize==FALSE)|all(correctslice==FALSE)) 
+
+at_least_one_good<- df2_check%>% 
+  group_by(FolderName,SeriesDescription)%>%
+  filter(any(correctinstance==TRUE)) 
+
+dates_good<- at_least_one_good %>%
+  group_by(ID)%>%
+  filter(Date %in% datalog2$Date)
+
+date_bad<-df2_check %>%
+  group_by(ID)%>%
+  filter(Date %nin% datalog2$Date)
+missing_entire_ses <- datalog2 %>%
+  group_by(ID)%>%
+  filter(Date %nin% df2_check$Date)
+
+```
+
+## R Markdown
+
+This First Summary will indicate if any of the following were missing entirely: 
+
+"Siemens_MPRAGE", 
+"Siemens_MPRAGE_ND",
+"ep2d_3.2mm_2Back", 
+"gre_field_mapping_2Back_ND",
+"gre_field_mapping_2Back"
+
+```{r Missing Series, echo=FALSE}
+missing_series_descriptions<- check_series_desc(df2, required_series_desc)
+DT::datatable(missing_series_descriptions)
+```
+
+## Checking Instances
+
+Here are all cases where a scan was present, but the number of instances were wrong. 
+
+The following tables checked the following scans:
+"Siemens_MPRAGE", 
+"Siemens_MPRAGE_ND",
+"Siemens_MPRAGE_2x2x2", 
+"Siemens_MPRAGE_2x2x2_ND",
+"ep2d_3.2mm_2Back", 
+"gre_field_mapping_2Back_ND",
+"gre_field_mapping_2Back"
+
+
+```{r instance, echo=FALSE}
+
+
+DT::datatable(instance_errors[,c(2:5,10,11)], options = list(pageLength = 10))
+
+```
+## Checking Slices
+
+This table will show you any cases where the number of slices was wrong
+
+```{r slices, echo=FALSE}
+DT::datatable(slice_errors[,c(2:5,7,12)], options = list(pageLength = 10))
+
+```
+
+## Checking Size
+
+This table will show you if the size was wrong
+```{r, echo=FALSE}
+DT::datatable(size_errors[,c(2:5,6,13)], options = list(pageLength = 10))
+```
+
+## Checking that every *collected* scan has at least one version that is correct
+You'll notice that all the errors above were for the 2Back, this is expected, but I wanted to make sure all these participants had at least one that had the correct number.
+
+This next table filters any IDs that did not have **at least one** fully-correct correct scan(provided that it was run in the first place). You want this to be empty. 
+```{r, echo=FALSE}
+DT::datatable(instance_errors_bySD[,c(2:5,14:16)], options = list(pageLength = 10))
+```
+
+## Checking that the dates match
+This will display any cases where the date does not match our master spreadsheet
+```{r, echo=FALSE}
+DT::datatable(date_bad[,c(2:5)], options = list(pageLength = 10))
+```
+
+Lastly, here is the full table, complete with the helper columns that made this happen. 
+```{r, echo=FALSE}
+options(DT.fillContainer = T)
+DT::datatable(df2_check, options = list(pageLength = 10,scrollY = "565px"))
+```
+
+```{r, echo=FALSE}
+
+#write.csv(missing_series_descriptions, paste0("missing_series","_",today_date,".csv"))
+#write.csv(df2_check, paste0("swith_helper_columns","_",today_date,".csv"))
+```
+

@@ -23,6 +23,12 @@ View(df)
 
 colnames(df)[1:4] <- c("ID", "Date", "Scan", "Instance")
 
+datalog<-DataLog_2024_06_24 <- read_csv("DataLog_2024_06_24.csv", 
+                               col_types = cols(`Date of Scan` = col_date(format = "%m/%d/%Y")))
+datalog<- datalog[,1:2]
+colnames(datalog)[1:2] <- c("Date","ID")
+datalog$Date<-format(datalog$Date, format = "%Y%m%d")
+
 ###############
 #set variables#
 ###############
@@ -36,9 +42,13 @@ expected_scans <- c("svs_edit_L_dLPFC_GABA_NWS_2.6mm3","svs_edit_L_dLPFC_GABA_WS
 today_date<- Sys.Date()
 format(today_date, format = "%Y%m%d")
 today_date<-as.character(today_date)
+
 ###########
 #Functions#
 ###########
+
+`%nin%` = Negate(`%in%`)
+
 
 #FunctionnnnnTime-- This is to check for the missing instances and export a df of it
 check_instances <- function(df, expected_scans) {
@@ -74,7 +84,6 @@ check_instances <- function(df, expected_scans) {
         
         # BAM, set the diff of what's expected vs what we get. 
         missing_instances <- setdiff(expected_instances, present_instances)
-        
         # now im appending to my dataframe. i have no idea why i needed rbind i dont use forloops often 
         if (length(missing_instances) > 0) {
           missing_instances_rows <- data.frame(ID = rep(i, length(missing_instances)),
@@ -92,23 +101,36 @@ check_instances <- function(df, expected_scans) {
   # now i make sure i can get this data out of the loop
   return(missing_df)
 }
-#thank u rainbow curly brackets but also these were the death of me
+
 
 ###########Heres where I do the things################
+duplicate_scans<-  df %>%
+  filter(duplicated(df,fromLast=FALSE))
 
 # make our df of the missing instances 
 missing_instances_to_print <- check_instances(df, expected_scans)
 missing_instances_to_print <- missing_instances_to_print %>% arrange(ID, Date, Scan, Instance)
 
-# Print the missing dataframe
-print(missing_instances_to_print)
+#df of correct IDs
+allIDses <- select(df, ID, Date)
+allIDses$ID_Date <- paste0(df$ID,"_", df$Date)
+MissingIDs <- select(missing_instances_to_print, ID, Date)
+MissingIDs$ID_Date <- paste0(missing_instances_to_print$ID,"_",missing_instances_to_print$Date)
+DuplicateIDs <- select(duplicate_scans, ID, Date)
+DuplicateIDs$ID_Date <- paste0(duplicate_scans$ID,"_",duplicate_scans$Date)
+AllErrorIDs <- rbind(MissingIDs,DuplicateIDs)
+datalog$ID_Date <- paste0(datalog$ID,"_",datalog$Date)
+
+correctIDs <- allIDses %>%
+  filter(ID_Date %nin% AllErrorIDs$ID_Date)
+
+correctIDs<- unique(correctIDs)
+
+correctIDs_AlsoMatchExpectedDates<- correctIDs %>%
+  filter(ID_Date %in% datalog$ID_Date)
 
 # Export the  dataframe as a CSV -- id like to use a variable to add todays date to the title.
-write.csv(missing_instances_to_print, paste0("missing_instances","_",today_date,".csv"))
-
-
-#i want us to know if any files were duplicated; not sure what to do with this info but here we are.
-#next i can check that the id and date are expected.
-duplicate_scans<-  df %>%
-  filter(duplicated(df,fromLast=FALSE))
-write.csv(duplicate_scans, paste0("duplicate_instances","_",today_date,".csv"))
+write.csv(missing_instances_to_print, paste0("missing_spec_instances","_",today_date,".csv"))
+write.csv(duplicate_scans, paste0("duplicate_spec_instances","_",today_date,".csv"))
+write.csv(correctIDs_AlsoMatchExpectedDates, paste0("CorrectIDs","_",today_date,".csv"))
+write.csv(missing_instances_to_print, paste0("missing_spec_instances","_",today_date,".csv"))
