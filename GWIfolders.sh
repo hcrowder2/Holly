@@ -1,6 +1,10 @@
 #!/bin/bash
+#written on bash version 3.2.57 
 
 #Usage: creates folder structure for data exports for rda spec, twix spec, twix BBB
+#Notes: See Project-Specific gDoc for full instructions on running this script
+#Before 1st use on computer you need to modify permissions to allow this to run 
+###   chmod +rwx /path/file.sh
 
 read -p 'ID: ' ID
 
