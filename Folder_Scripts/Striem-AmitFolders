@@ -5,7 +5,7 @@
 #Notes: See Project-Specific gDoc for full instructions on running this script
 #Before 1st use on computer you need to modify permissions to allow this to run 
 ###   chmod +x /path/file
-printf "System date is $(date +"%Y_%m_%d" ), creating folders for Spence MWCCS project\n"
+printf "System date is $(date +"%Y_%m_%d" ), creating folders for Striem-Amit Blindness project\n"
 
 read -p 'Enter Subject ID: ' id
 
