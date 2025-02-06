@@ -4,13 +4,18 @@
 #Usage: creates folder structure for data exports for rda spec, twix spec, twix BBB
 #Notes: See Project-Specific gDoc for full instructions on running this script
 #Before 1st use on computer you need to modify permissions to allow this to run 
-###   chmod +rwx /path/file.sh
+###   chmod +rwx /path/file
+printf "System date is $(date +"%Y_%m_%d" ), creating folders for Holton GWI project\n"
 
-read -p 'ID: ' ID
+read -p 'Enter Subject ID: ' id
 
-read -p 'Enter Date in format YYYY_MM_DD: ' Date 
+read -p 'Enter Date in format YYYY_MM_DD (or t for today): ' input_date 
 
-lead="${ID}_${Date}"
+if [[ "$input_date" == "T" ||  "$input_date" == "t" ]]; then
+        input_date=$(date +"%Y_%m_%d")
+fi
+
+lead="${id}_${input_date}"
 
 
 F1="${lead}_1_GABA_DLPFC_NWS"
@@ -41,3 +46,5 @@ mkdir -pv "${lead}_twix_spec"
 chmod  +rwx $PWD/"${lead}_twix_BBB"/
 chmod  +rwx $PWD/"${lead}_twix_spec"/
 chmod  +rwx $PWD/"${lead}"/
+
+printf "All done!\nPlease inspect folders and make adjustments as needed to fit the participant's session!"
